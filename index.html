@@ -12,9 +12,7 @@
         body {
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             min-height: 100vh;
-            display: flex;
-            align-items: center;
-            padding: 20px 0;
+            padding: 40px 0;
         }
         .card-main {
             border: none;
@@ -39,10 +37,13 @@
         }
         .result-card {
             border-left: 5px solid #0d6efd;
+            background: #f8f9fa;
+            border-radius: 12px;
             transition: transform 0.2s;
         }
-        .result-card:hover {
-            transform: translateY(-2px);
+        .badge-mes {
+            font-size: 0.85rem;
+            padding: 6px 10px;
         }
     </style>
 </head>
@@ -50,116 +51,156 @@
 
 <div class="container">
     <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
+        <div class="col-lg-8">
             <div class="card card-main p-4 p-md-5 bg-white">
                 <div class="text-center mb-4">
-                    <h2 class="fw-bold text-dark">Consulta de Créditos</h2>
-                    <p class="text-muted">Digite seu nome para verificar o saldo total disponível no bolão</p>
+                    <h2 class="fw-bold text-dark">Consulta de Créditos do Bolão</h2>
+                    <p class="text-muted">Pesquise seu nome para ver o histórico e simular abatimentos</p>
                 </div>
 
-                <!-- Campo de Pesquisa -->
-                <div class="search-box mb-4">
-                    <i class="bi bi-search fs-5"></i>
-                    <input type="text" id="searchInput" class="form-control search-input" placeholder="Digite seu nome..." onkeyup="filtrarCreditos()" autocomplete="off">
+                <!-- Barra de Pesquisa e Botão Tabela Completa -->
+                <div class="row g-2 mb-4">
+                    <div class="col-md-9 search-box">
+                        <i class="bi bi-search fs-5"></i>
+                        <input type="text" id="searchInput" class="form-control search-input" placeholder="Digite seu nome..." onkeyup="filtrarCreditos()" autocomplete="off">
+                    </div>
+                    <div class="col-md-3 d-grid">
+                        <button class="btn btn-outline-primary rounded-pill fw-semibold" onclick="toggleTabelaCompleta()">
+                            <p class="mb-0" id="btnText"><i class="bi bi-list-ul"></i> Ver Todos</p>
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Área de Resultados -->
-                <div id="resultContainer" class="d-flex flex-column gap-3">
-                    <p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o resultado.</p>
+                <!-- Área de Resultados / Histórico do Participante -->
+                <div id="resultContainer" class="d-flex flex-column gap-3 mb-3">
+                    <p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o saldo e o histórico.</p>
                 </div>
+
+                <!-- Seção da Tabela Completa (Oculta por padrão) -->
+                <div id="fullTableContainer" class="d-none mt-4">
+                    <hr class="mb-4">
+                    <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-people-fill"></i> Lista Completa de Participantes</h5>
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-striped table-hover align-middle">
+                            <thead class="table-dark sticky-top">
+                                <tr>
+                                    <th>Nome</th>
+                                    <th class="text-end">Total Disponível</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullTableBody">
+                                <!-- Preenchido via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 </div>
 
-<!-- JavaScript com os dados completos (Nome e Total Disponível) -->
+<!-- JavaScript com todos os 84 participantes e funcionalidades -->
 <script>
     const baseCreditos = [
-        { nome: "Abilino Leniel de Jesus", total: 16.78 },
-        { nome: "Adelicio de Sousa Silva [não está GR]", total: 1.94 },
-        { nome: "Alessandro Moreira Garcia", total: 9.19 },
-        { nome: "Allan Borges Pontes", total: 9.19 },
-        { nome: "Aliane Veloso Mendes Etho", total: 9.19 },
-        { nome: "Alex de Souza Silva", total: 0.75 },
-        { nome: "Alexandre Fukuda", total: 20.21 },
-        { nome: "Alvaro Nogueira Lara", total: 0.75 },
-        { nome: "Andre Luiz Gouveia", total: 0.75 },
-        { nome: "Andre Luiz da Silva Campos [sai do GR]", total: 1.60 },
-        { nome: "Andre Luiz de Lima", total: 0.75 },
-        { nome: "Antonio Carlos F. da Silva", total: 20.21 },
-        { nome: "Armando Jose S. Junior", total: 0.75 },
-        { nome: "Bruno Cesar V. de Oliveira", total: 9.19 },
-        { nome: "Bruno de Araujo R. e Silva", total: 10.79 },
-        { nome: "Carlos Eduardo da Silva", total: 0.75 },
-        { nome: "Carlos Eduardo G. de Souza", total: 1.60 },
-        { nome: "Carlos Henrique de S. Paula", total: 0.75 },
-        { nome: "Christian Goncalves C. Lima", total: 0.75 },
-        { nome: "Daniel de Araujo M. e Silva", total: 1.60 },
-        { nome: "Danilo Esser Souza Silva [não está GR]", total: 11.08 },
-        { nome: "Diogo Henrique de Souza", total: 0.75 },
-        { nome: "Eduardo Henrique de S. Silva", total: 1.60 },
-        { nome: "Euridice Aparecida de O. Silva", total: 9.19 },
-        { nome: "Euclides S Pereira Jr.", total: 3.14 },
-        { nome: "Fabio de Souza Araujo", total: 1.60 },
-        { nome: "Fabricio Jose de Oliveira", total: 9.19 },
-        { nome: "Flavio CostaCurta Junior", total: 9.19 },
-        { nome: "Francisco Santana Neto", total: 9.19 },
-        { nome: "Graziela Gomes Pereira", total: 9.19 },
-        { nome: "Guilherme Henrique S. Rabelo", total: 0.75 },
-        { nome: "Gustavo Pagliari Flores", total: 9.19 },
-        { nome: "Hanniel Fernando", total: 8.19 },
-        { nome: "Humberto Jose de Souza", total: 1.60 },
-        { nome: "Igor Matheus de S. Araujo", total: 0.75 },
-        { nome: "Isaque de Oliveira Santos", total: 0.75 },
-        { nome: " Joao Luiz da Silva Cruz", total: 9.19 },
-        { nome: "Jorge Washiya", total: 9.19 },
-        { nome: "Jose Carlos de S. Junior", total: 0.75 },
-        { nome: "Juvanio R da Silva", total: 13.92 },
-        { nome: "Leandro Diullas Sperandio", total: 9.19 },
-        { nome: "Leandro Nery Nacimento", total: 9.19 },
-        { nome: "Leonardo G. de Oliveira", total: 0.75 },
-        { nome: "Leonildo R Sousa", total: 1.53 },
-        { nome: "Lucas Cusinato Santos", total: 9.19 },
-        { nome: "Luciano Cesar de Oliveira", total: 9.19 },
-        { nome: "Luiz Clovis de Carvalho", total: 11.08 },
-        { nome: "Marcelo Henrique da Silva", total: 9.19 },
-        { nome: "Marcio Antonio de Souza", total: 1.60 },
-        { nome: "Marcos Vinicius de S. Lima", total: 0.75 },
-        { nome: "Mario Sergio de Oliveira", total: 0.75 },
-        { nome: "Matheus Henrique S. Costa", total: 0.75 },
-        { nome: "Michel Anderson F. Passos [não está GR]", total: 11.08 },
-        { nome: "Natassja Voronkoff", total: 18.65 },
-        { nome: "Nilson Aparecido Borges", total: 3.14 },
-        { nome: "Otavio Augusto de S. Junior", total: 0.75 },
-        { nome: "Pablo Henrique de Souza", total: 0.75 },
-        { nome: "Patricia Regina de S. Silva", total: 1.60 },
-        { nome: "Paulo Cesar de Souza", total: 9.19 },
-        { nome: "Pedro Araujo C. Junior [não está GR]", total: 11.08 },
-        { nome: "Rafael Henrique de Souza", total: 0.75 },
-        { nome: "Raphel Embelicieri Junior", total: 1.53 },
-        { nome: "Renato Jose de Souza", total: 9.19 },
-        { nome: "Ricardo Macedo V. Goncalves", total: 11.08 },
-        { nome: "Riuji M Auzani Queiroz", total: 9.19 },
-        { nome: "Roberto Carlos de Souza", total: 1.60 },
-        { nome: "Rodrigo Henrique de Souza", total: 9.19 },
-        { nome: "Rogerio Jose de Souza", total: 0.75 },
-        { nome: "Rosemery Apolinario de Alencar", total: 9.19 },
-        { nome: "Rosimeire Hirako", total: 9.19 },
-        { nome: "Rubens Jose de Souza", total: 1.60 },
-        { nome: "Sergio Henrique de Souza", total: 9.19 },
-        { nome: "Silvio Cesar de Souza", total: 0.75 },
-        { nome: "Tania Almeida da Costa", total: 9.19 },
-        { nome: "Tassio Carvalho Soares de Souza", total: 9.19 },
-        { nome: "Thiago Mendes [não está GR]", total: 3.14 },
-        { nome: "Tiago Henrique de Souza", total: 0.75 },
-        { nome: "Valter Jose de Souza", total: 0.75 },
-        { nome: "Victor Aguiar B. Santos", total: 9.19 },
-        { nome: "Vilmar Guimaraes", total: 9.19 },
-        { nome: "Vinicius Henrique de Souza", total: 0.75 },
-        { nome: "Wagner Jose de Souza", total: 9.19 },
-        { nome: "Wellington Jose de Souza", total: 9.19 },
-        { nome: "Wesley Henrique de Souza", total: 9.19 }
+        { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, total: 16.78 },
+        { nome: "Adelicio de Sousa Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 1.94 },
+        { nome: "Alessandro Moreira Garcia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Allan Borges Pontes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Aliane Veloso Mendes Etho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Alex de Souza Silva", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Alexandre Fukuda", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 20.21 },
+        { nome: "Alvaro Nogueira Lara", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Andre Luiz Gouveia", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Bruno Gasparoni Labre de Lemos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Cesar Adriano N Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Clenio Weuter e Silva [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Cleyton Coradi de Freitas", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Danilo Esser Souza Silva [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Davi Moreira de Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Debora Martins Medeiros", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Dimas de Almeida Souza [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Eduardo Massaki Etho", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Eduardo Xavier Albertoni [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Euclides S Pereira Jr.", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, total: 3.14 },
+        { nome: "Euridice Aparecida de Oliveira Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Fabia Brito Quaglia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Fabiano de Almeida", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Flavio Antonio Moreira da Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Flavio CostaCurta Junior", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Flavio Ferreira Almeida [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Franpauli Basileu Bandeira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Francisco Santana Neto", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Giann Frabizzio Sell Rossi [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Graziela Gomes Pereira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Guilherme de Alencar", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Gustavo Pagliari Flores", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Hanniel Fernando", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 8.19 },
+        { nome: "Jefferson Raimundo dos Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "João Adolfo Silva Machado", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "João Luiz da Silva Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Jonathan Queiroz Marfil", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Jorge Washiya", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Julio Cesar Alves Esquerdo", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Juvanio R da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 13.92 },
+        { nome: "Leandro Diullas Sperandio", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Leandro Nery Nacimento", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Leonardo Mayer Delfiaco", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Leonardo Eldi Akaji", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Leonildo R Sousa", maio: 0.00, junho: 0.00, agosto: 1.53, setembro: 0.00, total: 1.53 },
+        { nome: "Lucas Cusinato Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Luiz Clovis de Carvalho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Luis Carlos Colicchio Raymundo", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Marcelo Bispo da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Marcio Manoel Oliveira Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Marcel Henrique Trabuco", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Marcus Vinicius Ribeiro Jacobina", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Maria Alves de Lima Torres", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Mario Alburqueque Junior", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Manoel Souza Lisboa", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Michel Anderson Friedrich Passos [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Natassja Voronkoff", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, total: 18.65 },
+        { nome: "Nilson Aparecido Borges", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, total: 3.14 },
+        { nome: "Nilton da Silva Mesquita", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Pablo Cruz da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Pedro Augusto da Camara de Oliveira [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Pedro Araujo Chaves Junior [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Priscila Castro de Oliveira Gomes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Rafael Andrade Belloti", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Rafael Campos Carneiro Ururahy", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Raphel Embelicieri Junior", maio: 0.00, junho: 0.00, agosto: 1.53, setembro: 0.00, total: 1.53 },
+        { nome: "Reginaldo do Santos Borges", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Reinaldo Narumi Shinmachi", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Ricardo Macedo Vargas Goncalves", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 11.08 },
+        { nome: "Rodrigo Bernadino de Almeida", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Rosemery Apolinario de Alencar", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Rosimeire Hirako", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Riuji M Auzani Queiroz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Tania Almeida da Costa", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Tassio Carvalho Soares de Souza", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Thiago Mendes [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, total: 3.14 },
+        { nome: "Tiago Silveira D Orta", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Tiago Augusto da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Sergio Borges Marques", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Sormane Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Valter Ferreira Fantoni", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Victor Aguiar B. Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Vilmar Guimaraes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 }
     ];
+
+    // Preenche a tabela completa ao carregar a página
+    window.onload = function() {
+        const tbody = document.getElementById('fullTableBody');
+        baseCreditos.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${item.nome}</td>
+                <td class="text-end fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    };
 
     function filtrarCreditos() {
         const termo = document.getElementById('searchInput').value.toLowerCase().trim();
@@ -168,7 +209,7 @@
         container.innerHTML = '';
 
         if (termo === '') {
-            container.innerHTML = '<p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o resultado.</p>';
+            container.innerHTML = '<p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o saldo e o histórico.</p>';
             return;
         }
 
@@ -179,23 +220,75 @@
             return;
         }
 
-        resultados.forEach(item => {
+        resultados.forEach((item, index) => {
             const card = document.createElement('div');
-            card.className = 'card p-3 result-card bg-light';
+            card.className = 'card p-4 result-card shadow-sm';
             card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center">
-                    <div>
-                        <h6 class="mb-1 fw-bold text-secondary">Participante</h6>
-                        <span class="fs-6 text-dark">${item.nome}</span>
-                    </div>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-person-circle"></i> ${item.nome}</h5>
                     <div class="text-end">
-                        <span class="d-block text-muted small">Total Disponível</span>
+                        <span class="text-muted small d-block">Total Disponível</span>
                         <span class="fs-4 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</span>
                     </div>
                 </div>
+                
+                <hr class="text-muted opacity-25">
+
+                <!-- Histórico Mensal -->
+                <p class="fw-semibold text-secondary small mb-2"><i class="bi bi-calendar-check"></i> Histórico de Créditos Novos:</p>
+                <div class="d-flex flex-wrap gap-2 mb-3">
+                    <span class="badge bg-secondary badge-mes">Maio: R$ ${item.maio.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge bg-secondary badge-mes">Junho: R$ ${item.junho.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge bg-secondary badge-mes">Agosto: R$ ${item.agosto.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge bg-secondary badge-mes">Setembro: R$ ${item.setembro.toFixed(2).replace('.', ',')}</span>
+                </div>
+
+                <!-- Simulador de Abatimento -->
+                <div class="bg-white p-3 rounded-3 border">
+                    <label class="form-label fw-semibold small text-dark"><i class="bi bi-calculator"></i> Simular Abatimento (Valor da Aposta/Jogo em R$):</label>
+                    <div class="input-group">
+                        <span class="input-group-text">R$</span>
+                        <input type="number" step="0.01" class="form-control" id="inputAposta_${index}" placeholder="Ex: 50.00" oninput="calcularAbatimento(${item.total}, ${index})">
+                    </div>
+                    <div id="resultadoAbatimento_${index}" class="mt-2 text-muted small fst-italic">
+                        Digite um valor acima para calcular o valor a pagar subtraindo os créditos.
+                    </div>
+                </div>
             `;
-            container.appendChild(src = card);
+            container.appendChild(card);
         });
+    }
+
+    function calcularAbatimento(totalDisponivel, index) {
+        const inputVal = document.getElementById(`inputAposta_${index}`).value;
+        const divResultado = document.getElementById(`resultadoAbatimento_${index}`);
+
+        if (inputVal === '' || isNaN(inputVal)) {
+            divResultado.innerHTML = 'Digite um valor acima para calcular o valor a pagar subtraindo os créditos.';
+            return;
+        }
+
+        const valorAposta = parseFloat(inputVal);
+        const aPagar = valorAposta - totalDisponivel;
+
+        if (aPagar <= 0) {
+            divResultado.innerHTML = `<span class="fw-bold text-success"><i class="bi bi-check-circle-fill"></i> O seu crédito cobre 100% da aposta! Sobra um saldo de R$ ${Math.abs(aPagar).toFixed(2).replace('.', ',')}. Valor a pagar: R$ 0,00</span>`;
+        } else {
+            divResultado.innerHTML = `<span class="fw-bold text-danger"><i class="bi bi-exclamation-circle-fill"></i> Valor a pagar (R$ ${valorAposta.toFixed(2).replace('.', ',')} - R$ ${totalDisponivel.toFixed(2).replace('.', ',')} de crédito): <span class="fs-6 text-dark">R$ ${aPagar.toFixed(2).replace('.', ',')}</span></span>`;
+        }
+    }
+
+    function toggleTabelaCompleta() {
+        const tabelaDiv = document.getElementById('fullTableContainer');
+        const btnText = document.getElementById('btnText');
+        
+        if (tabelaDiv.classList.contains('d-none')) {
+            tabelaDiv.classList.remove('d-none');
+            btnText.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar Todos';
+        } else {
+            tabelaDiv.classList.add('d-none');
+            btnText.innerHTML = '<i class="bi bi-list-ul"></i> Ver Todos';
+        }
     }
 </script>
 
