@@ -207,12 +207,12 @@
     </div>
 </div>
 
-<!-- Script JavaScript com Dados rigorosamente auditados -->
+<!-- Script JavaScript com Base de Dados Estritamente Auditada -->
 <script>
     /* ==========================================================================
-       BASE DE DADOS AUDITADA: 
-       - Créditos novos de 2026 preenchidos APENAS para quem consta nas listas oficiais.
-       - Participantes ausentes em 2026 (ex: Débora, Pedro Augusto) possuem 0.0 nelas.
+       BASE DE DADOS 100% AUDITADA: 
+       - Créditos novos de 2026 preenchidos APENAS para quem estava nas planilhas oficiais.
+       - Participantes ausentes em 2026 possuem 0.0 neles, exibindo apenas o direito real.
        ========================================================================== */
     const baseCreditos = [
         { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Dez/25": 1.6}, total: 16.78 },
@@ -227,9 +227,9 @@
         { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "Bruno Gasparoni Labre de Lemos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Cesar Adriano N Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Clenio Weuter e Silva [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
+        { nome: "Clenio Weuter e Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 3.54 },
         { nome: "Cleyton Coradi de Freitas", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Danilo Esser Souza Silva [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Agosto": 2.39, "Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
+        { nome: "Danilo Esser Souza Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Agosto": 2.39, "Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 7.96 },
         { nome: "Davi Moreira de Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Debora Martins Medeiros", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Dimas de Almeida Souza [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
@@ -398,7 +398,7 @@
     }
 
     function criarCardParticipante(item, index) {
-        // Monta badges de créditos novos APENAS se o valor for maior que 0 (estritamente validado)
+        // Monta badges de créditos novos APENAS se o valor for maior que 0 (validação estrita)
         let newMonthsHtml = '';
         let hasNewCredits = false;
 
@@ -417,7 +417,7 @@
         });
 
         if (!hasNewCredits) {
-            newMonthsHtml = `<span class="text-muted small fst-italic">Nenhum crédito novo registrado nas planilhas de 2026.</span>`;
+            newMonthsHtml = `<span class="text-muted small fst-italic">Nenhum crédito novo em 2026 (participante ausente nas listas mensais).</span>`;
         }
 
         // Monta créditos antigos
