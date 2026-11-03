@@ -3,46 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Consulta de Créditos - Bolão</title>
-    <!-- Bootstrap 5 CSS para estilização moderna e responsiva -->
+    <title>Portal de Créditos | Bolão</title>
+    <!-- Bootstrap 5 CSS -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons para ícones visuais -->
+    <!-- Bootstrap Icons -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
+        :root {
+            --bg-gradient: linear-gradient(135deg, #0f172a 1e%, #1e293b 100%);
+            --card-bg: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --border-color: #e2e8f0;
+        }
+
         body {
-            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            font-family: 'Inter', sans-serif;
+            background: var(--bg-gradient);
             min-height: 100vh;
-            padding: 40px 0;
+            color: var(--text-primary);
+            padding: 40px 15px;
         }
-        .card-main {
+
+        .main-card {
+            background: var(--card-bg);
             border: none;
-            border-radius: 16px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            border-radius: 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3), 0 10px 10px -5px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
         }
-        .search-box {
+
+        .header-section {
+            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+            color: white;
+            padding: 35px 20px;
+            text-align: center;
+            border-radius: 24px 24px 0 0;
+        }
+
+        .search-container {
             position: relative;
+            margin-top: -25px;
+            z-index: 10;
         }
-        .search-box i {
+
+        .search-input {
+            height: 56px;
+            border-radius: 50rem;
+            padding-left: 55px;
+            padding-right: 25px;
+            font-size: 1.1rem;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+
+        .search-input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.15);
+        }
+
+        .search-icon {
             position: absolute;
-            left: 15px;
+            left: 22px;
             top: 50%;
             transform: translateY(-50%);
-            color: #6c757d;
+            color: var(--text-secondary);
+            font-size: 1.25rem;
         }
-        .search-input {
-            padding-left: 45px;
-            border-radius: 50rem;
-            height: 50px;
-            font-size: 1.1rem;
-        }
-        .result-card {
-            border-left: 5px solid #0d6efd;
-            background: #f8f9fa;
+
+        /* Lista de Autocomplete Estilizada */
+        .suggestions-list {
+            position: absolute;
+            width: 100%;
+            max-height: 250px;
+            overflow-y: auto;
+            background: white;
+            border: 1px solid var(--border-color);
             border-radius: 12px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            margin-top: 5px;
+            z-index: 1000;
+            display: none;
         }
+
+        .suggestion-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            transition: background 0.2s;
+            border-bottom: 1px solid #f1f5f9;
+        }
+
+        .suggestion-item:hover {
+            background: #f8fafc;
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .result-box {
+            animation: fadeIn 0.4s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         .badge-mes {
-            font-size: 0.8rem;
-            padding: 5px 8px;
+            background: #f1f5f9;
+            color: #334155;
+            font-weight: 500;
+            font-size: 0.85rem;
+            padding: 8px 12px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .badge-old {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .simulator-box {
+            background: #f8fafc;
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
         }
     </style>
 </head>
@@ -51,59 +141,68 @@
 <div class="container">
     <div class="row justify-content-center">
         <div class="col-lg-8">
-            <div class="card card-main p-4 p-md-5 bg-white">
-                <div class="text-center mb-4">
-                    <h2 class="fw-bold text-dark">Consulta de Créditos do Bolão</h2>
-                    <p class="text-muted">Pesquise seu nome para verificar o histórico completo e simular abatimentos</p>
+            <div class="main-card bg-white">
+                
+                <!-- Cabeçalho Moderno -->
+                <div class="header-section">
+                    <h1 class="fw-bold fs-3 mb-1"><i class="bi bi-wallet2"></i> Consulta de Créditos</h1>
+                    <p class="mb-0 opacity-75">Consulte seu saldo, histórico mensal e simule abatimentos</p>
                 </div>
 
-                <!-- Barra de Pesquisa e Botão para Alternar Tabela Completa -->
-                <div class="row g-2 mb-4">
-                    <div class="col-md-9 search-box">
-                        <i class="bi bi-search fs-5"></i>
-                        <input type="text" id="searchInput" class="form-control search-input" placeholder="Digite seu nome..." onkeyup="filtrarCreditos()" autocomplete="off">
+                <div class="p-4 p-md-5">
+                    <!-- Barra de Pesquisa com Autocomplete -->
+                    <div class="search-container mb-4">
+                        <div class="position-relative">
+                            <i class="bi bi-search search-icon"></i>
+                            <input type="text" id="searchInput" class="form-control search-input" placeholder="Digite seu nome para pesquisar..." oninput="onSearchInput()" autocomplete="off">
+                            <div id="suggestionsContainer" class="suggestions-list"></div>
+                        </div>
                     </div>
-                    <div class="col-md-3 d-grid">
-                        <button class="btn btn-outline-primary rounded-pill fw-semibold" onclick="toggleTabelaCompleta()">
-                            <span id="btnText"><i class="bi bi-list-ul"></i> Ver Todos</span>
+
+                    <!-- Botão de Ação Rápida (Ver Todos) -->
+                    <div class="text-end mb-4">
+                        <button class="btn btn-light border rounded-pill px-4 text-secondary fw-semibold" onclick="toggleTabelaCompleta()">
+                            <span id="btnText"><i class="bi bi-list-ul"></i> Ver Todos os Participantes</span>
                         </button>
                     </div>
-                </div>
 
-                <!-- Área onde os cards de resultados e histórico serão injetados -->
-                <div id="resultContainer" class="d-flex flex-column gap-3 mb-3">
-                    <p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o saldo e o histórico.</p>
-                </div>
-
-                <!-- Seção da Tabela Completa (Oculta por padrão) -->
-                <div id="fullTableContainer" class="d-none mt-4">
-                    <hr class="mb-4">
-                    <h5 class="fw-bold mb-3 text-secondary"><i class="bi bi-people-fill"></i> Lista Completa de Participantes</h5>
-                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
-                        <table class="table table-striped table-hover align-middle">
-                            <thead class="table-dark sticky-top">
-                                <tr>
-                                    <th>Nome</th>
-                                    <th class="text-end">Total Disponível</th>
-                                </tr>
-                            </thead>
-                            <tbody id="fullTableBody">
-                                <!-- Preenchido via JavaScript -->
-                            </tbody>
-                        </table>
+                    <!-- Área de Exibição do Resultado da Pesquisa -->
+                    <div id="resultContainer">
+                        <div class="text-center py-5 text-muted">
+                            <i class="bi bi-search fs-1 opacity-25 d-block mb-2"></i>
+                            <p class="fst-italic">Comece a digitar o seu nome acima ou clique em "Ver Todos".</p>
+                        </div>
                     </div>
-                </div>
 
+                    <!-- Seção da Tabela Completa (Oculta por padrão) -->
+                    <div id="fullTableContainer" class="d-none mt-4">
+                        <hr class="mb-4">
+                        <h5 class="fw-bold mb-3 text-dark"><i class="bi bi-people-fill text-primary"></i> Lista Completa de Participantes</h5>
+                        <div class="table-responsive shadow-sm rounded-4 border" style="max-height: 400px; overflow-y: auto;">
+                            <table class="table table-hover align-middle mb-0">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th class="ps-3">Nome</th>
+                                        <th class="text-end pe-3">Total Disponível</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="fullTableBody">
+                                    <!-- Preenchido via JS -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Script JavaScript com comentários de manutenção -->
+<!-- Script JavaScript Completo com todas as melhorias -->
 <script>
     /* ==========================================================================
-       BASE DE DADOS: Contém todos os 84 participantes, créditos novos, 
-       créditos antigos e o somatório total disponível.
+       BASE DE DADOS: 84 Participantes com créditos novos, antigos e total
        ========================================================================== */
     const baseCreditos = [
         { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Dez/25": 1.6}, total: 16.78 },
@@ -193,104 +292,144 @@
     ];
 
     /* ==========================================================================
-       INICIALIZAÇÃO: Preenche a tabela completa ao carregar a página
+       INICIALIZAÇÃO: Popula a tabela completa ao carregar a página
        ========================================================================== */
     window.onload = function() {
         const tbody = document.getElementById('fullTableBody');
         baseCreditos.forEach(item => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
-                <td>${item.nome}</td>
-                <td class="text-end fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
+                <td class="ps-3 fw-medium">${item.nome}</td>
+                <td class="text-end pe-3 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
             `;
             tbody.appendChild(tr);
         });
     };
 
     /* ==========================================================================
-       FUNÇÃO DE FILTRAGEM E BUSCA: Localiza o participante digitado 
-       e renderiza o cartão com o histórico de créditos novos e antigos.
+       AUTOCOMPLETE E PESQUISA EM TEMPO REAL
        ========================================================================== */
-    function filtrarCreditos() {
+    function onSearchInput() {
         const termo = document.getElementById('searchInput').value.toLowerCase().trim();
-        const container = document.getElementById('resultContainer');
+        const suggestionsBox = document.getElementById('suggestionsContainer');
         
-        container.innerHTML = '';
+        suggestionsBox.innerHTML = '';
 
-        // Se o campo estiver vazio, exibe mensagem inicial
         if (termo === '') {
-            container.innerHTML = '<p class="text-center text-muted fst-italic">Comece a digitar o seu nome acima para ver o saldo e o histórico.</p>';
+            suggestionsBox.style.display = 'none';
+            document.getElementById('resultContainer').innerHTML = `
+                <div class="text-center py-5 text-muted">
+                    <i class="bi bi-search fs-1 opacity-25 d-block mb-2"></i>
+                    <p class="fst-italic">Comece a digitar o seu nome acima ou clique em "Ver Todos".</p>
+                </div>`;
             return;
         }
 
-        // Filtra os participantes que contêm o texto digitado
-        const resultados = baseCreditos.filter(item => item.nome.toLowerCase().includes(termo));
+        const matches = baseCreditos.filter(item => item.nome.toLowerCase().includes(termo));
 
-        if (resultados.length === 0) {
-            container.innerHTML = '<div class="alert alert-warning text-center m-0" role="alert">Nenhum participante encontrado com esse nome.</div>';
-            return;
+        if (matches.length > 0) {
+            suggestionsBox.style.display = 'block';
+            matches.slice(0, 5).forEach(item => {
+                const div = document.createElement('div');
+                div.className = 'suggestion-item';
+                div.innerHTML = `<i class="bi bi-person text-primary me-2"></i> ${item.nome}`;
+                div.onclick = () => {
+                    document.getElementById('searchInput').value = item.nome;
+                    suggestionsBox.style.display = 'none';
+                    exibirResultado(item);
+                };
+                suggestionsBox.appendChild(div);
+            });
+        } else {
+            suggestionsBox.style.display = 'none';
         }
 
-        // Monta os cards para cada participante encontrado
-        resultados.forEach((item, index) => {
-            // Monta o HTML dos créditos antigos se existirem
-            let oldHtml = '';
-            const oldKeys = Object.keys(item.old);
-            if (oldKeys.length > 0) {
-                oldHtml = `<p class="fw-semibold text-secondary small mb-1 mt-2"><i class="bi bi-clock-history"></i> Créditos Anteriores:</p>
-                           <div class="d-flex flex-wrap gap-2 mb-2">`;
-                oldKeys.forEach(k => {
-                    oldHtml += `<span class="badge bg-dark badge-mes">${k}: R$ ${item.old[k].toFixed(2).replace('.', ',')}</span>`;
-                });
-                oldHtml += `</div>`;
-            }
-
-            const card = document.createElement('div');
-            card.className = 'card p-4 result-card shadow-sm';
-            card.innerHTML = `
-                <div class="d-flex justify-content-between align-items-center mb-2">
-                    <h5 class="fw-bold text-primary mb-0"><i class="bi bi-person-circle"></i> ${item.nome}</h5>
-                    <div class="text-end">
-                        <span class="text-muted small d-block">Total Disponível</span>
-                        <span class="fs-4 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                </div>
-                
-                <hr class="text-muted opacity-25">
-
-                <!-- Histórico de Créditos Novos -->
-                <p class="fw-semibold text-secondary small mb-1"><i class="bi bi-calendar-check"></i> Créditos Novos (2026):</p>
-                <div class="d-flex flex-wrap gap-2 mb-2">
-                    <span class="badge bg-secondary badge-mes">Maio: R$ ${item.maio.toFixed(2).replace('.', ',')}</span>
-                    <span class="badge bg-secondary badge-mes">Junho: R$ ${item.junho.toFixed(2).replace('.', ',')}</span>
-                    <span class="badge bg-secondary badge-mes">Agosto: R$ ${item.agosto.toFixed(2).replace('.', ',')}</span>
-                    <span class="badge bg-secondary badge-mes">Setembro: R$ ${item.setembro.toFixed(2).replace('.', ',')}</span>
-                </div>
-
-                <!-- Histórico de Créditos Antigos (se houver) -->
-                ${oldHtml}
-
-                <!-- Simulador de Abatimento -->
-                <div class="bg-white p-3 rounded-3 border mt-3">
-                    <label class="form-label fw-semibold small text-dark"><i class="bi bi-calculator"></i> Simular Abatimento (Valor da Aposta/Jogo em R$):</label>
-                    <div class="input-group">
-                        <span class="input-group-text">R$</span>
-                        <input type="number" step="0.01" class="form-control" id="inputAposta_${index}" placeholder="Ex: 50.00" oninput="calcularAbatimento(${item.total}, ${index})">
-                    </div>
-                    <!-- Linha abaixo dedicada para exibir o abatimento e o valor restante a pagar -->
-                    <div id="resultadoAbatimento_${index}" class="mt-2 text-muted small fst-italic">
-                        Digite um valor acima para calcular o valor a pagar subtraindo os créditos.
-                    </div>
-                </div>
-            `;
-            container.appendChild(card);
-        });
+        // Se houver correspondência exata ou apenas 1 resultado, exibe automaticamente
+        if (matches.length === 1) {
+            exibirResultado(matches[0]);
+        } else if (matches.length > 1) {
+            // Mostra múltiplos cartões caso encontre mais de um nome parecido
+            let htmlCards = '<div class="d-flex flex-column gap-3">';
+            matches.forEach((item, idx) => {
+                htmlCards += criarCardParticipante(item, idx);
+            });
+            htmlCards += '</div>';
+            document.getElementById('resultContainer').innerHTML = htmlCards;
+        } else {
+            document.getElementById('resultContainer').innerHTML = `
+                <div class="alert alert-warning text-center rounded-4 p-4 shadow-sm" role="alert">
+                    <i class="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
+                    Nenhum participante encontrado com o nome <strong>"${termo}"</strong>. Verifique a digitação.
+                </div>`;
+        }
     }
 
     /* ==========================================================================
-       FUNÇÃO DE ABATIMENTO CORRIGIDA: 
-       Lógica: Valor Informado - Total de Créditos = Valor a Pagar
-       Mostra em linha separada o valor abatido e o valor restante.
+       EXIBIÇÃO DO CARTÃO DO PARTICIPANTE
+       ========================================================================== */
+    function exibirResultado(item) {
+        document.getElementById('suggestionsContainer').style.display = 'none';
+        document.getElementById('resultContainer').innerHTML = criarCardParticipante(item, 0);
+    }
+
+    function criarCardParticipante(item, index) {
+        // Monta HTML de créditos antigos
+        let oldHtml = '';
+        const oldKeys = Object.keys(item.old);
+        if (oldKeys.length > 0) {
+            oldHtml = `<p class="fw-semibold text-secondary small mb-2 mt-3"><i class="bi bi-clock-history"></i> Créditos Anteriores:</p>
+                       <div class="d-flex flex-wrap gap-2">`;
+            oldKeys.forEach(k => {
+                oldHtml += `<span class="badge badge-old badge-mes">${k}: R$ ${item.old[k].toFixed(2).replace('.', ',')}</span>`;
+            });
+            oldHtml += `</div>`;
+        }
+
+        return `
+            <div class="card p-4 border-0 shadow-sm rounded-4 bg-light result-box">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <div>
+                        <span class="badge bg-primary bg-opacity-10 text-primary mb-1 fw-semibold">Participante</span>
+                        <h4 class="fw-bold text-dark mb-0">${item.nome}</h4>
+                    </div>
+                    <div class="text-end">
+                        <span class="text-muted small d-block">Total Disponível</span>
+                        <span class="fs-3 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</span>
+                    </div>
+                </div>
+
+                <hr class="text-muted opacity-25 my-3">
+
+                <!-- Histórico Novos -->
+                <p class="fw-semibold text-secondary small mb-2"><i class="bi bi-calendar-check text-primary"></i> Créditos Novos (2026):</p>
+                <div class="d-flex flex-wrap gap-2">
+                    <span class="badge badge-mes">Maio: R$ ${item.maio.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge badge-mes">Junho: R$ ${item.junho.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge badge-mes">Agosto: R$ ${item.agosto.toFixed(2).replace('.', ',')}</span>
+                    <span class="badge badge-mes">Setembro: R$ ${item.setembro.toFixed(2).replace('.', ',')}</span>
+                </div>
+
+                ${oldHtml}
+
+                <!-- Simulador de Abatimento -->
+                <div class="simulator-box mt-4">
+                    <label class="form-label fw-bold small text-dark mb-2">
+                        <i class="bi bi-calculator text-primary"></i> Simulador de Aposta / Abatimento:
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0">R$</span>
+                        <input type="number" step="0.01" class="form-control border-start-0 ps-0" id="inputAposta_${index}" placeholder="Digite o valor da aposta (Ex: 50.00)" oninput="calcularAbatimento(${item.total}, ${index})">
+                    </div>
+                    <div id="resultadoAbatimento_${index}" class="mt-3 text-muted small fst-italic">
+                        Digite um valor acima para calcular o valor a pagar com o abatimento dos créditos.
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    /* ==========================================================================
+       CÁLCULO DE ABATIMENTO (Valor Informado - Total de Créditos)
        ========================================================================== */
     function calcularAbatimento(totalDisponivel, index) {
         const inputVal = document.getElementById(`inputAposta_${index}`).value;
@@ -302,37 +441,32 @@
         }
 
         const valorAposta = parseFloat(inputVal);
-        
-        // O valor efetivamente abatido pelo crédito (não ultrapassa o valor da aposta)
         const valorAbatido = Math.min(valorAposta, totalDisponivel);
-        
-        // Cálculo correto: Valor Informado menos o Total de Créditos
         const aPagar = valorAposta - totalDisponivel;
 
         if (aPagar <= 0) {
             divResultado.innerHTML = `
-                <div class="text-success fw-bold">
-                    <i class="bi bi-check-circle-fill"></i> Valor abatido pelos créditos: R$ ${valorAbatido.toFixed(2).replace('.', ',')}
-                </div>
-                <div class="text-success small mt-1">
-                    O seu crédito cobre 100% da aposta! Sobra um saldo de R$ ${Math.abs(aPagar).toFixed(2).replace('.', ',')}. <strong>Valor a pagar: R$ 0,00</strong>
+                <div class="p-3 bg-success bg-opacity-10 rounded-3 text-success">
+                    <div class="fw-bold mb-1"><i class="bi bi-check-circle-fill"></i> O seu crédito cobre 100% da aposta!</div>
+                    <div>Valor abatido: R$ ${valorAbatido.toFixed(2).replace('.', ',')} | <strong>Valor a pagar: R$ 0,00</strong></div>
+                    <div class="small mt-1 opacity-75">Sobra um saldo de R$ ${Math.abs(aPagar).toFixed(2).replace('.', ',')} para os próximos jogos.</div>
                 </div>
             `;
         } else {
             divResultado.innerHTML = `
-                <div class="text-secondary fw-semibold">
-                    <i class="bi bi-dash-circle"></i> Valor abatido por créditos: R$ ${totalDisponivel.toFixed(2).replace('.', ',')}
-                </div>
-                <div class="text-dark fw-bold mt-1">
-                    Valor a pagar (R$ ${valorAposta.toFixed(2).replace('.', ',')} - R$ ${totalDisponivel.toFixed(2).replace('.', ',')}): <span class="text-danger fs-6">R$ ${aPagar.toFixed(2).replace('.', ',')}</span>
+                <div class="p-3 bg-white rounded-3 border">
+                    <div class="text-secondary small">Valor abatido pelos créditos: <strong class="text-dark">R$ ${totalDisponivel.toFixed(2).replace('.', ',')}</strong></div>
+                    <div class="text-dark fw-bold mt-1 pt-1 border-top">
+                        Valor a pagar (R$ ${valorAposta.toFixed(2).replace('.', ',')} - R$ ${totalDisponivel.toFixed(2).replace('.', ',')}): 
+                        <span class="text-danger fs-5 ms-1">R$ ${aPagar.toFixed(2).replace('.', ',')}</span>
+                    </div>
                 </div>
             `;
         }
     }
 
     /* ==========================================================================
-       FUNÇÃO DE EXIBIÇÃO DA TABELA COMPLETA: Alterna a visualização 
-       da lista de todos os participantes.
+       EXIBIÇÃO DA TABELA COMPLETA
        ========================================================================== */
     function toggleTabelaCompleta() {
         const tabelaDiv = document.getElementById('fullTableContainer');
@@ -343,9 +477,16 @@
             btnText.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar Todos';
         } else {
             tabelaDiv.classList.add('d-none');
-            btnText.innerHTML = '<i class="bi bi-list-ul"></i> Ver Todos';
+            btnText.innerHTML = '<i class="bi bi-list-ul"></i> Ver Todos os Participantes';
         }
     }
+
+    // Fecha sugestões ao clicar fora
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.search-container')) {
+            document.getElementById('suggestionsContainer').style.display = 'none';
+        }
+    });
 </script>
 
 </body>
