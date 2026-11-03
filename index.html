@@ -211,8 +211,8 @@
 <script>
     /* ==========================================================================
        BASE DE DADOS 100% AUDITADA: 
-       - Créditos novos de 2026 preenchidos APENAS para quem estava nas planilhas oficiais.
-       - Participantes ausentes em 2026 possuem 0.0 neles, exibindo apenas o direito real.
+       - Participantes com tags [não está GR] ou [sai do GR] e ausentes em 2026 
+         possuem créditos novos zerados (0.0), exibindo apenas seus direitos reais de 2025.
        ========================================================================== */
     const baseCreditos = [
         { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Dez/25": 1.6}, total: 16.78 },
@@ -224,7 +224,7 @@
         { nome: "Alexandre Fukuda", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"outubro": 0.44, "Abril/25": 0.75, "Set/25": 9.06, "Dez/25": 1.6}, total: 20.21 },
         { nome: "Alvaro Nogueira Lara", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Andre Luiz Gouveia", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
+        { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "Bruno Gasparoni Labre de Lemos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Cesar Adriano N Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Clenio Weuter e Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 3.54 },
@@ -232,24 +232,24 @@
         { nome: "Danilo Esser Souza Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Agosto": 2.39, "Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 7.96 },
         { nome: "Davi Moreira de Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Debora Martins Medeiros", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Dimas de Almeida Souza [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
+        { nome: "Dimas de Almeida Souza [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "Eduardo Massaki Etho", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Eduardo Xavier Albertoni [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
+        { nome: "Eduardo Xavier Albertoni [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "Euclides S Pereira Jr.", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, old: {"Agosto": 2.39}, total: 3.14 },
         { nome: "Euridice Aparecida de Oliveira Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Fabia Brito Quaglia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Fabiano de Almeida", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Flavio Antonio Moreira da Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Flavio CostaCurta Junior", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Flavio Ferreira Almeida [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
+        { nome: "Flavio Ferreira Almeida [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "Franpauli Basileu Bandeira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Francisco Santana Neto", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Giann Frabizzio Sell Rossi [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
+        { nome: "Giann Frabizzio Sell Rossi [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 3.54 },
         { nome: "Graziela Gomes Pereira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Guilherme de Alencar", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Gustavo Pagliari Flores", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Hanniel Fernando", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Jefferson Raimundo dos Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
+        { nome: "Jefferson Raimundo dos Santos", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
         { nome: "João Adolfo Silva Machado", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "João Luiz da Silva Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Jonathan Queiroz Marfil", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
@@ -265,19 +265,19 @@
         { nome: "Luiz Clovis de Carvalho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
         { nome: "Luis Carlos Colicchio Raymundo", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Marcelo Bispo da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Marcio Manoel Oliveira Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 1.60 },
+        { nome: "Marcio Manoel Oliveira Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Marcel Henrique Trabuco", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Marcus Vinicius Ribeiro Jacobina", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Maria Alves de Lima Torres", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Mario Alburqueque Junior", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Manoel Souza Lisboa", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Michel Anderson Friedrich Passos [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
+        { nome: "Manoel Souza Lisboa", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44}, total: 2.47 },
+        { nome: "Michel Anderson Friedrich Passos [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 5.57 },
         { nome: "Natassja Voronkoff", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Setembro": 2.03, "Dez/25": 1.6}, total: 18.65 },
         { nome: "Nilson Aparecido Borges", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, old: {"Agosto": 2.39}, total: 3.14 },
         { nome: "Nilton da Silva Mesquita", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Pablo Cruz da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Pedro Augusto da Camara de Oliveira [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44}, total: 0.44 },
-        { nome: "Pedro Araujo Chaves Junior [não está GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
+        { nome: "Pedro Araujo Chaves Junior [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 5.57 },
         { nome: "Priscila Castro de Oliveira Gomes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Rafael Andrade Belloti", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Rafael Campos Carneiro Ururahy", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
@@ -291,12 +291,12 @@
         { nome: "Riuji M Auzani Queiroz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Tania Almeida da Costa", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Tassio Carvalho Soares de Souza", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Thiago Mendes [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, old: {"Agosto": 2.39}, total: 3.14 },
+        { nome: "Thiago Mendes [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Agosto": 2.39, "Setembro": 2.03}, total: 4.42 },
         { nome: "Tiago Silveira D Orta", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Tiago Augusto da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Sergio Borges Marques", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
+        { nome: "Tiago Augusto da Silva", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 9.06}, total: 9.06 },
+        { nome: "Sergio Borges Marques", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {}, total: 0.00 },
         { nome: "Sormane Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Valter Ferreira Fantoni", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
+        { nome: "Valter Ferreira Fantoni", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
         { nome: "Victor Aguiar B. Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
         { nome: "Vilmar Guimaraes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 }
     ];
@@ -398,7 +398,7 @@
     }
 
     function criarCardParticipante(item, index) {
-        // Monta badges de créditos novos APENAS se o valor for maior que 0 (validação estrita)
+        // Monta badges de créditos novos APENAS se o valor for maior que 0 (auditado rigorosamente)
         let newMonthsHtml = '';
         let hasNewCredits = false;
 
@@ -417,7 +417,7 @@
         });
 
         if (!hasNewCredits) {
-            newMonthsHtml = `<span class="text-muted small fst-italic">Nenhum crédito novo em 2026 (participante ausente nas listas mensais).</span>`;
+            newMonthsHtml = `<span class="text-muted small fst-italic">Nenhum crédito novo em 2026 (participante ausente nas listas mensais ou ausente do grupo).</span>`;
         }
 
         // Monta créditos antigos
