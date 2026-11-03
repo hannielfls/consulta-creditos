@@ -1,0 +1,110 @@
+Aqui está o código completo em **HTML, CSS e JavaScript** para criar uma página de pesquisa dos dados da planilha.
+
+Como o **Google Sites** não permite a execução direta de JavaScript personalizado nas páginas modernas, você pode hospedar este código gratuitamente em plataformas como **GitHub Pages**, **Netlify** ou **Vercel** e depois incorporá-lo no seu Google Sites utilizando um `<iframe>` ou a opção **Incorporar por URL**.
+
+### Código da Aplicação
+
+```html
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pesquisa de Créditos - Bolão</title>
+    <!-- Bootstrap CSS para um design limpo e responsivo -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; padding: 20px; }
+        .card { border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .table-container { margin-top: 20px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="card p-4 bg-white">
+                <h2 class="mb-4 text-center text-primary">Consulta de Créditos do Bolão</h2>
+                
+                <!-- Barra de Pesquisa -->
+                <div class="input-group mb-3">
+                    <input type="text" id="searchInput" class="form-control" placeholder="Digite o nome do participante..." onkeyup="filterTable()">
+                    <button class="btn btn-primary" type="button" onclick="filterTable()">Pesquisar</button>
+                </div>
+
+                <!-- Tabela de Resultados -->
+                <div class="table-container">
+                    <table class="table table-striped table-hover align-middle" id="creditTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>Nome Participante</th>
+                                <th>Maio 2026</th>
+                                <th>Junho 2026</th>
+                                <th>Agosto 2026</th>
+                                <th>Setembro 2026</th>
+                                <th>Total Disponível</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <!-- Os dados serão inseridos dinamicamente aqui via JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript para popular e filtrar os dados -->
+<script>
+    // Dados extraídos da planilha de Resumo Geral Atualizada
+    const dadosCreditos = [
+        { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, total: 16.78 },
+        { nome: "Adelicio de Sousa Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 1.94 },
+        { nome: "Alessandro Moreira Garcia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Allan Borges Pontes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Aliane Veloso Mendes Etho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 9.19 },
+        { nome: "Alex de Souza Silva", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Alexandre Fukuda", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 20.21 },
+        { nome: "Alvaro Nogueira Lara", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Andre Luiz Gouveia", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, total: 0.75 },
+        { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 1.60 },
+        { nome: "Hanniel Fernando", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, total: 8.19 }
+        // Nota: Você pode adicionar os demais participantes da planilha seguindo este mesmo padrão.
+    ];
+
+    function carregarTabela(dados) {
+        const tbody = document.getElementById('tableBody');
+        tbody.innerHTML = '';
+        
+        dados.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><strong>${item.nome}</strong></td>
+                <td>R$ ${item.maio.toFixed(2).replace('.', ',')}</td>
+                <td>R$ ${item.junho.toFixed(2).replace('.', ',')}</td>
+                <td>R$ ${item.agosto.toFixed(2).replace('.', ',')}</td>
+                <td>R$ ${item.setembro.toFixed(2).replace('.', ',')}</td>
+                <td class="text-success fw-bold">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    function filterTable() {
+        const query = document.getElementById('searchInput').value.toLowerCase();
+        const filtrados = dadosCreditos.filter(item => item.nome.toLowerCase().includes(query));
+        carregarTabela(filtrados);
+    }
+
+    // Inicializa a tabela ao carregar a página
+    window.onload = () => carregarTabela(dadosCreditos);
+</script>
+
+</body>
+</html>
+
+```
+
+---
