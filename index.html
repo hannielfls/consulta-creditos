@@ -1,537 +1,716 @@
 <!DOCTYPE html>
+<!--
+  CRÉDITOS DO BOLÃO: site de consulta (pesquisa por nome + simulador de abatimento)
+  Arquivo único: HTML + CSS + JavaScript, sem servidor e sem bibliotecas externas.
+  Funciona no GitHub Pages: basta substituir este index.html e fazer o commit.
+
+  COMO ATUALIZAR OS DADOS (quando chegarem novos meses ou mudar alguém de situação)
+  1. Todos os dados estão na constante D, no início do script (procure por "const D=").
+  2. Formato de cada pessoa: ["Nome", status, [[mês, cotas, centavos], ...], [["Rótulo", centavos], ...]]
+     - status: 0 = ativo em 2026 | 1 = no grupo, sem bolão em 2026 | 2 = fora do grupo
+     - mês: posição na lista MS (0 Maio, 1 Junho, 2 Agosto, 3 Setembro). Para um mês novo,
+       acrescente o nome em MS e use a nova posição; tudo o mais se ajusta sozinho.
+     - créditos anteriores: rótulo livre (ex.: "Dez/25") e valor em centavos.
+  3. Valores sempre em CENTAVOS inteiros (R$ 4,73 = 473) para evitar erro de arredondamento.
+  4. Não existe campo "total": o script soma créditos de 2026 + anteriores.
+  5. A coluna Julho da planilha geral foi ignorada de propósito (não conta no saldo).
+  6. Conferência: com os dados atuais são 84 pessoas e o total geral é R$ 706,79.
+  7. Manter a lista em ordem alfabética.
+-->
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal de Créditos | Bolão</title>
-    <!-- Bootstrap 5 CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <!-- Bootstrap Icons -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css" rel="stylesheet">
-    <!-- Google Fonts Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --bg-gradient: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-            --card-bg: #ffffff;
-            --text-primary: #1e293b;
-            --text-secondary: #64748b;
-            --primary-color: #3b82f6;
-            --border-color: #e2e8f0;
-        }
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Créditos do Bolão</title>
+  <style>
+    /* CORES (tema claro). Para mudar a identidade visual, altere estas variáveis.
+       --pri/--pri2 = cores de destaque; --ok/--wn/--of = status ativo/sem bolão/fora do grupo;
+       --bad = valor a pagar. Os padding-top/bottom abaixo respeitam a área segura de celulares com notch. */
+    :root {
+      --bg: #f3f5fb;
+      --card: #fff;
+      --tx: #0f172a;
+      --mut: #64748b;
+      --line: #e2e8f0;
+      --pri: #4f46e5;
+      --pri2: #9333ea;
+      --soft: #eef2ff;
+      --ok: #047857;
+      --okb: #d1fae5;
+      --wn: #b45309;
+      --wnb: #fef3c7;
+      --of: #475569;
+      --ofb: #e2e8f0;
+      --bad: #b91c1c;
+      box-sizing: border-box;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
 
-        body {
-            font-family: 'Inter', sans-serif;
-            background: var(--bg-gradient);
-            min-height: 100vh;
-            color: var(--text-primary);
-            padding: 40px 15px;
-        }
+    /* TEMA ESCURO automático (segue o aparelho). Mantenha estes valores iguais aos do bloco
+       :root[data-theme="dark"] logo abaixo (usado pelo botão de alternar tema). */
+    @media(prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #0b1020;
+        --card: #151b2e;
+        --tx: #e8ecf8;
+        --mut: #93a0bd;
+        --line: #26304a;
+        --pri: #818cf8;
+        --pri2: #c084fc;
+        --soft: #1e2545;
+        --ok: #6ee7b7;
+        --okb: #0f3a2e;
+        --wn: #fcd34d;
+        --wnb: #40300c;
+        --of: #cbd5e1;
+        --ofb: #2a344d;
+        --bad: #fca5a5;
+      }
+    }
 
-        .main-card {
-            background: var(--card-bg);
-            border: none;
-            border-radius: 24px;
-            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
-            overflow: hidden;
-        }
+    /* TEMA ESCURO forçado pelo botão 🌓 (mesmos valores do bloco acima) */
+    :root[data-theme="dark"] {
+      --bg: #0b1020;
+      --card: #151b2e;
+      --tx: #e8ecf8;
+      --mut: #93a0bd;
+      --line: #26304a;
+      --pri: #818cf8;
+      --pri2: #c084fc;
+      --soft: #1e2545;
+      --ok: #6ee7b7;
+      --okb: #0f3a2e;
+      --wn: #fcd34d;
+      --wnb: #40300c;
+      --of: #cbd5e1;
+      --ofb: #2a344d;
+      --bad: #fca5a5;
+    }
 
-        .header-section {
-            background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-            color: white;
-            padding: 35px 20px;
-            text-align: center;
-            border-radius: 24px 24px 0 0;
-        }
+    /* BASE: fundo, fonte do sistema (sem download) e espaçamento */
+    html {
+      scroll-padding-top: env(safe-area-inset-top, 0px);
+      background: var(--bg);
+    }
+    *, *::before, *::after {
+      box-sizing: inherit;
+    }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--tx);
+      font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    }
 
-        .search-container {
-            position: relative;
-            margin-top: -25px;
-            z-index: 10;
-        }
+    /* TOPO com degradê (cabeçalho) */
+    .hero {
+      background: linear-gradient(135deg, #4f46e5, #9333ea);
+      color: #fff;
+      padding: 14px 20px 76px;
+      text-align: center;
+    }
+    .hero h1 {
+      margin: 4px 0;
+      font-size: 1.65rem;
+      letter-spacing: -.02em;
+    }
+    .hero p {
+      margin: 0;
+      opacity: .88;
+      font-size: .93rem;
+    }
 
-        .search-input {
-            height: 56px;
-            border-radius: 50rem;
-            padding-left: 55px;
-            padding-right: 25px;
-            font-size: 1.1rem;
-            border: 2px solid var(--border-color);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
-        }
+    /* COLUNA CENTRAL: largura máxima de 640px; sobe sobre o topo para o efeito de sobreposição */
+    .wrap {
+      max-width: 640px;
+      margin: -50px auto 0;
+      padding: 0 14px 40px;
+    }
 
-        .search-icon {
-            position: absolute;
-            left: 22px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-secondary);
-            font-size: 1.25rem;
-        }
+    /* CARTÃO branco padrão (busca, resultado e simulador) com animação de entrada */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      padding: 18px;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, .08);
+      margin-bottom: 14px;
+      animation: up .35s ease;
+    }
+    @keyframes up {
+      from { opacity: 0; transform: translateY(8px); }
+    }
 
-        /* Sugestões do Autocomplete */
-        .suggestions-list {
-            position: absolute;
-            width: 100%;
-            max-height: 250px;
-            overflow-y: auto;
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 12px;
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            margin-top: 5px;
-            z-index: 1000;
-            display: none;
-        }
+    /* CAMPOS DE TEXTO (busca e simulador) */
+    input {
+      width: 100%;
+      font: inherit;
+      color: var(--tx);
+      background: var(--bg);
+      border: 2px solid var(--line);
+      border-radius: 14px;
+      padding: 14px 16px;
+      outline: none;
+    }
+    input:focus {
+      border-color: var(--pri);
+    }
 
-        .suggestion-item {
-            padding: 12px 20px;
-            cursor: pointer;
-            transition: background 0.2s;
-            border-bottom: 1px solid #f1f5f9;
-        }
+    /* LISTA DE SUGESTÕES de nomes (aparece quando há mais de um resultado) */
+    .sug {
+      list-style: none;
+      margin: 8px 0 0;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      overflow: hidden;
+    }
 
-        .suggestion-item:hover {
-            background: #f8fafc;
-            color: var(--primary-color);
-            font-weight: 500;
-        }
+    /* BOTÃO ✕ de limpar (dentro do campo de busca) e LISTA COMPLETA de nomes (com rolagem) */
+    .sb {
+      position: relative;
+    }
+    #q {
+      padding-right: 56px;
+    }
+    .x {
+      position: absolute;
+      top: 9px;
+      right: 9px;
+      width: 38px;
+      height: 38px;
+      border: 0;
+      border-radius: 50%;
+      background: var(--soft);
+      color: var(--mut);
+      font: inherit;
+      cursor: pointer;
+    }
+    .x:hover {
+      color: var(--tx);
+    }
+    .all {
+      max-height: 320px;
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .sug li {
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      align-items: center;
+      border-top: 1px solid var(--line);
+    }
+    .sug li:first-child {
+      border-top: 0;
+    }
+    .sug li:hover {
+      background: var(--soft);
+    }
 
-        .result-box {
-            animation: fadeIn 0.3s ease-in-out;
-        }
+    /* SELOS de status (cores definidas por .ok, .wn e .of) */
+    .badge {
+      display: inline-block;
+      font-size: .76rem;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+    }
+    .ok {
+      color: var(--ok);
+      background: var(--okb);
+    }
+    .wn {
+      color: var(--wn);
+      background: var(--wnb);
+    }
+    .of {
+      color: var(--of);
+      background: var(--ofb);
+    }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(8px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
+    /* TOTAL DISPONÍVEL (número grande) e rótulos pequenos de seção */
+    .total {
+      font-size: 2.5rem;
+      font-weight: 800;
+      letter-spacing: -.03em;
+      line-height: 1.1;
+      margin: 2px 0 12px;
+    }
+    .lbl {
+      font-size: .76rem;
+      color: var(--mut);
+      text-transform: uppercase;
+      letter-spacing: .07em;
+      font-weight: 600;
+      margin: 18px 0 8px;
+    }
 
-        /* Badge de Crédito Novo com Checagem Positiva (Azul) */
-        .badge-new-valid {
-            background: #eff6ff;
-            color: #1e40af;
-            font-weight: 600;
-            font-size: 0.85rem;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid #93c5fd;
-        }
+    /* QUADRINHOS de crédito por mês: grade que se ajusta à largura da tela */
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(135px, 1fr));
+      gap: 8px;
+    }
+    .chip {
+      background: var(--soft);
+      border-radius: 12px;
+      padding: 10px 12px;
+    }
+    .chip b {
+      display: block;
+    }
+    .chip small {
+      color: var(--mut);
+    }
 
-        /* Badge de Crédito Antigo */
-        .badge-old {
-            background: #f1f5f9;
-            color: #334155;
-            font-weight: 500;
-            font-size: 0.85rem;
-            padding: 8px 12px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-        }
+    /* BARRAS de progresso (2026 x anteriores e crédito usado no simulador) */
+    .bar {
+      height: 10px;
+      border-radius: 99px;
+      background: var(--line);
+      overflow: hidden;
+      display: flex;
+    }
+    .bar i {
+      display: block;
+      height: 100%;
+      transition: width .4s;
+    }
 
-        /* Link interativo na tabela */
-        .participant-link {
-            color: var(--primary-color);
-            text-decoration: none;
-            font-weight: 500;
-            cursor: pointer;
-            transition: color 0.2s;
-        }
+    /* TRÊS CAIXAS do simulador (usado, restante, a pagar); em telas estreitas ficam empilhadas */
+    .tiles {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 12px;
+    }
+    .tile {
+      background: var(--soft);
+      border-radius: 12px;
+      padding: 10px 6px;
+      text-align: center;
+    }
+    .tile b {
+      display: block;
+      font-size: 1.05rem;
+    }
+    .tile small {
+      color: var(--mut);
+      font-size: .74rem;
+    }
 
-        .participant-link:hover {
-            color: #1d4ed8;
-            text-decoration: underline;
-        }
-    </style>
+    /* BOTÕES: atalhos de valor (R$ 10, 20...), alternar tema e sugestão "Você quis dizer" */
+    .q {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+    .q button, .ic, .lk {
+      font: inherit;
+      cursor: pointer;
+      border: 1px solid var(--line);
+      background: var(--card);
+      color: var(--tx);
+      border-radius: 99px;
+      padding: 7px 14px;
+    }
+    .q button:hover, .lk:hover {
+      border-color: var(--pri);
+    }
+    .ic {
+      background: rgba(255, 255, 255, .2);
+      border-color: transparent;
+      color: #fff;
+      padding: 6px 11px;
+    }
+    .msg {
+      color: var(--mut);
+      text-align: center;
+      padding: 22px 12px;
+    }
+    .note {
+      font-size: .85rem;
+      color: var(--mut);
+    }
+    h2, h3 {
+      margin: 8px 0 0;
+    }
+
+    /* AJUSTES PARA CELULAR PEQUENO e para quem prefere menos animação */
+    @media(max-width: 420px) {
+      .total { font-size: 2.1rem; }
+      .tiles { grid-template-columns: 1fr; }
+    }
+    @media(prefers-reduced-motion: reduce) {
+      .bar i { transition: none; }
+      .card { animation: none; }
+    }
+  </style>
 </head>
 <body>
-
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-lg-8">
-            <div class="main-card bg-white">
-                
-                <!-- Cabeçalho -->
-                <div class="header-section">
-                    <h1 class="fw-bold fs-3 mb-1"><i class="bi bi-wallet2"></i> Consulta de Créditos - Bolão</h1>
-                    <p class="mb-0 opacity-75">Auditoria rigorosa de saldos e simulador de abatimentos</p>
-                </div>
-
-                <div class="p-4 p-md-5">
-                    <!-- Barra de Pesquisa com Autocomplete -->
-                    <div class="search-container mb-4">
-                        <div class="position-relative">
-                            <i class="bi bi-search search-icon"></i>
-                            <input type="text" id="searchInput" class="form-control search-input" placeholder="Digite seu nome para pesquisar..." oninput="onSearchInput()" autocomplete="off">
-                            <div id="suggestionsContainer" class="suggestions-list"></div>
-                        </div>
-                    </div>
-
-                    <!-- Botão Ver Todos -->
-                    <div class="text-end mb-4">
-                        <button class="btn btn-light border rounded-pill px-4 text-secondary fw-semibold" onclick="toggleTabelaCompleta()">
-                            <span id="btnText"><i class="bi bi-list-ul"></i> Ver Todos os Participantes</span>
-                        </button>
-                    </div>
-
-                    <!-- Área de Exibição dos Resultados -->
-                    <div id="resultContainer">
-                        <div class="text-center py-5 text-muted">
-                            <i class="bi bi-search fs-1 opacity-25 d-block mb-2"></i>
-                            <p class="fst-italic">Comece a digitar o seu nome acima ou clique em "Ver Todos" na lista.</p>
-                        </div>
-                    </div>
-
-                    <!-- Seção da Tabela Completa (Nomes clicáveis) -->
-                    <div id="fullTableContainer" class="d-none mt-4">
-                        <hr class="mb-4">
-                        <h5 class="fw-bold mb-2 text-dark"><i class="bi bi-people-fill text-primary"></i> Lista Completa de Participantes</h5>
-                        <p class="text-muted small mb-3">Clique em qualquer nome abaixo para ver o extrato detalhado:</p>
-                        <div class="table-responsive shadow-sm rounded-4 border" style="max-height: 400px; overflow-y: auto;">
-                            <table class="table table-hover align-middle mb-0">
-                                <thead class="table-dark sticky-top">
-                                    <tr>
-                                        <th class="ps-3">Nome Participante</th>
-                                        <th class="text-end pe-3">Total Disponível</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="fullTableBody">
-                                    <!-- Preenchido via JavaScript -->
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                </div>
-            </div>
-        </div>
+  <!-- TOPO: título e botão de alternar tema claro/escuro -->
+  <header class="hero">
+    <div style="text-align:right">
+      <button class="ic" id="th" aria-label="Alternar tema claro e escuro">🌓</button>
     </div>
-</div>
+    <div style="font-size:2rem">🎟️</div>
+    <h1>Créditos do Bolão</h1>
+    <p>Digite seu nome, veja seus créditos e simule o abatimento.</p>
+  </header>
 
-<!-- Script JavaScript com Base de Dados Estritamente Auditada -->
-<script>
-    /* ==========================================================================
-       BASE DE DADOS 100% AUDITADA: 
-       - Participantes com tags [não está GR] ou [sai do GR] e ausentes em 2026 
-         possuem créditos novos zerados (0.0), exibindo apenas seus direitos reais de 2025.
-       ========================================================================== */
-    const baseCreditos = [
-        { nome: "Abilino Leniel de Jesus", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Dez/25": 1.6}, total: 16.78 },
-        { nome: "Adelicio de Sousa Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5}, total: 1.94 },
-        { nome: "Alessandro Moreira Garcia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Allan Borges Pontes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Aliane Veloso Mendes Etho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Alex de Souza Silva", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Julho": 2.48, "Abril/25": 0.75}, total: 0.75 },
-        { nome: "Alexandre Fukuda", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"outubro": 0.44, "Abril/25": 0.75, "Set/25": 9.06, "Dez/25": 1.6}, total: 20.21 },
-        { nome: "Alvaro Nogueira Lara", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Andre Luiz Gouveia", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Andre Luiz da Silva Campos [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
-        { nome: "Bruno Gasparoni Labre de Lemos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Cesar Adriano N Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Clenio Weuter e Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 3.54 },
-        { nome: "Cleyton Coradi de Freitas", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Danilo Esser Souza Silva [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Agosto": 2.39, "Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 7.96 },
-        { nome: "Davi Moreira de Freitas", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Debora Martins Medeiros", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Dimas de Almeida Souza [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
-        { nome: "Eduardo Massaki Etho", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Eduardo Xavier Albertoni [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
-        { nome: "Euclides S Pereira Jr.", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, old: {"Agosto": 2.39}, total: 3.14 },
-        { nome: "Euridice Aparecida de Oliveira Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Fabia Brito Quaglia", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Fabiano de Almeida", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Flavio Antonio Moreira da Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Flavio CostaCurta Junior", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Flavio Ferreira Almeida [sai do GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
-        { nome: "Franpauli Basileu Bandeira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Francisco Santana Neto", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Giann Frabizzio Sell Rossi [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 3.54 },
-        { nome: "Graziela Gomes Pereira", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Guilherme de Alencar", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Gustavo Pagliari Flores", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Hanniel Fernando", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Jefferson Raimundo dos Santos", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Dez/25": 1.6}, total: 1.60 },
-        { nome: "João Adolfo Silva Machado", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "João Luiz da Silva Cruz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Jonathan Queiroz Marfil", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Jorge Washiya", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Julio Cesar Alves Esquerdo", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Juvanio R da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Julho": 5.73, "Dez/25": 1.6}, total: 13.92 },
-        { nome: "Leandro Diullas Sperandio", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Leandro Nery Nacimento", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Leonardo Mayer Delfiaco", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Leonardo Eldi Akaji", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Leonildo R Sousa", maio: 0.00, junho: 0.00, agosto: 1.53, setembro: 0.00, old: {}, total: 1.53 },
-        { nome: "Lucas Cusinato Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Luiz Clovis de Carvalho", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
-        { nome: "Luis Carlos Colicchio Raymundo", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Marcelo Bispo da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Marcio Manoel Oliveira Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Marcel Henrique Trabuco", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Marcus Vinicius Ribeiro Jacobina", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Maria Alves de Lima Torres", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Mario Alburqueque Junior", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Manoel Souza Lisboa", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44}, total: 2.47 },
-        { nome: "Michel Anderson Friedrich Passos [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 5.57 },
-        { nome: "Natassja Voronkoff", maio: 2.44, junho: 1.75, agosto: 1.53, setembro: 9.46, old: {"Setembro": 2.03, "Dez/25": 1.6}, total: 18.65 },
-        { nome: "Nilson Aparecido Borges", maio: 0.00, junho: 0.00, agosto: 0.75, setembro: 0.00, old: {"Agosto": 2.39}, total: 3.14 },
-        { nome: "Nilton da Silva Mesquita", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Pablo Cruz da Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Pedro Augusto da Camara de Oliveira [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"outubro": 0.44}, total: 0.44 },
-        { nome: "Pedro Araujo Chaves Junior [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 5.57 },
-        { nome: "Priscila Castro de Oliveira Gomes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Rafael Andrade Belloti", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Rafael Campos Carneiro Ururahy", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Raphel Embelicieri Junior", maio: 0.00, junho: 0.00, agosto: 1.53, setembro: 0.00, old: {}, total: 1.53 },
-        { nome: "Reginaldo do Santos Borges", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Reinaldo Narumi Shinmachi", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Ricardo Macedo Vargas Goncalves", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Setembro": 2.03, "outubro": 0.44, "Abril/25": 1.5, "Dez/25": 1.6}, total: 11.08 },
-        { nome: "Rodrigo Bernadino de Almeida", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Rosemery Apolinario de Alencar", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Rosimeire Hirako", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Riuji M Auzani Queiroz", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Tania Almeida da Costa", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Tassio Carvalho Soares de Souza", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Thiago Mendes [não está GR]", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Agosto": 2.39, "Setembro": 2.03}, total: 4.42 },
-        { nome: "Tiago Silveira D Orta", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Tiago Augusto da Silva", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Setembro": 9.06}, total: 9.06 },
-        { nome: "Sergio Borges Marques", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {}, total: 0.00 },
-        { nome: "Sormane Silva", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Valter Ferreira Fantoni", maio: 0.00, junho: 0.00, agosto: 0.00, setembro: 0.00, old: {"Abril/25": 0.75}, total: 0.75 },
-        { nome: "Victor Aguiar B. Santos", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 },
-        { nome: "Vilmar Guimaraes", maio: 1.22, junho: 0.88, agosto: 0.76, setembro: 4.73, old: {"Dez/25": 1.6}, total: 9.19 }
+  <!-- BUSCA: campo de nome + lista de sugestões (preenchida pelo JavaScript) -->
+  <main class="wrap">
+    <section class="card">
+      <label for="q" class="lbl" style="margin-top:0">Quem é você?</label>
+      <div class="sb">
+        <input id="q" type="text" placeholder="Digite seu nome…" autocomplete="off" autocapitalize="words" enterkeyhint="search">
+        <!-- Botão ✕: limpa o campo (só aparece quando há texto) -->
+        <button id="cl" class="x" type="button" aria-label="Limpar nome" hidden>✕</button>
+        <ul id="sg" class="sug" hidden></ul>
+      </div>
+      <!-- Botão que abre/fecha a lista com todos os nomes; clicar num nome preenche a busca e mostra as informações -->
+      <div class="q">
+        <button id="sa" type="button" class="lk" aria-expanded="false">📋 Mostrar todos os nomes</button>
+      </div>
+      <ul id="all" class="sug all" hidden></ul>
+    </section>
+
+    <!-- RESULTADO: o JavaScript escreve aqui o cartão do participante, o simulador e as mensagens -->
+    <div id="res" aria-live="polite">
+      <div class="card msg">
+        Comece digitando seu nome acima.<br>
+        <small>Não precisa de acento nem do nome completo.</small>
+      </div>
+    </div>
+    <p class="note" style="text-align:center">Dados da planilha geral e dos bolões de maio, junho, agosto e setembro/2026. Viu algo errado? Fale com o organizador.</p>
+  </main>
+
+  <script>
+    /* ====== DADOS ======
+       Veja o guia no topo do arquivo. MS = nomes dos meses de 2026 (posição = índice usado nos dados).
+       ST = texto de cada status; SC = classe de cor de cada status (ok / wn / of). */
+    const D = [
+      ["Abilino Leniel de Jesus", 0, [[0,2,244],[1,2,175],[2,2,153],[3,2,946]], [["Dez/25",160]]],
+      ["Adelicio de Sousa Silva", 2, [], [["Outubro (ant.)",44],["Abril/25",150]]],
+      ["Alessandro Moreira Garcia", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Alex de Souza Silva", 1, [], [["Abril/25",75]]],
+      ["Alexandre Fukuda", 0, [[0,1,122],[1,1,88],[2,2,153],[3,1,473]], [["Outubro (ant.)",44],["Abril/25",75],["Set/25",906],["Dez/25",160]]],
+      ["Aliane Veloso Mendes Etho", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Allan Borges Pontes", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Alvaro Nogueira Lara", 1, [], [["Abril/25",75]]],
+      ["Andre Luiz Gouveia", 1, [], [["Abril/25",75]]],
+      ["Andre Luiz da Silva Campos", 2, [], [["Dez/25",160]]],
+      ["Bruno Gasparoni Labre de Lemos", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Cesar Adriano N Freitas", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Clenio Weuter e Silva", 2, [], [["Abril/25",75]]],
+      ["Cleyton Coradi de Freitas", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Danilo Esser Souza Silva", 2, [], [["Setembro (ant.)",203],["Abril/25",75]]],
+      ["Davi Moreira de Freitas", 0, [[2,2,153]], [["Set/25",906],["Dez/25",160]]],
+      ["Debora Martins Medeiros", 1, [], [["Abril/25",75]]],
+      ["Dimas de Almeida Souza", 2, [], [["Dez/25",160]]],
+      ["Eduardo Massaki Etho", 0, [[0,1,122],[1,1,88],[2,1,76]], []],
+      ["Eduardo Xavier Albertoni", 2, [], [["Dez/25",160]]],
+      ["Euclides S Pereira Jr.", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Agosto (ant.)",239],["Dez/25",160]]],
+      ["Euridice Aparecida de Oliveira Silva", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Abril/25",75],["Set/25",906]]],
+      ["Fabia Brito Quaglia", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Fabiano de Almeida", 0, [[0,1,122],[1,1,88],[3,1,473]], [["Dez/25",160]]],
+      ["Flavio Antonio Moreira da Cruz", 0, [[0,1,122],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Flavio CostaCurta Junior", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Flavio Ferreira Almeida", 2, [], [["Dez/25",160]]],
+      ["Francisco Santana Neto", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Franpauli Basileu Bandeira", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Abril/25",75],["Set/25",906],["Dez/25",160]]],
+      ["Giann Frabizzio Sell Rossi", 2, [], []],
+      ["Graziela Gomes Pereira", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Guilherme de Alencar", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Gustavo Pagliari Flores", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Hanniel Fernando", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Jefferson Raimundo dos Santos", 1, [], [["Dez/25",160]]],
+      ["Jonathan Queiroz Marfil", 0, [[0,1,122],[1,1,88],[2,2,153],[3,1,473]], [["Dez/25",160]]],
+      ["Jorge Washiya", 0, [[0,1,122],[1,1,88],[2,2,153],[3,1,473]], [["Set/25",906],["Dez/25",160]]],
+      ["João Adolfo Silva Machado", 0, [[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["João Luiz da Silva Cruz", 0, [[0,1,122],[1,1,88],[2,2,153],[3,1,473]], [["Dez/25",160]]],
+      ["Julio Cesar Alves Esquerdo", 0, [[0,1,122],[1,1,88],[2,2,153],[3,1,473]], [["Dez/25",160]]],
+      ["Juvanio R da Silva", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Leandro Diullas Sperandio", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Leandro Nery Nacimento", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Leonardo Eldi Akaji", 0, [[0,1,122],[3,1,473]], [["Dez/25",160]]],
+      ["Leonardo Mayer Delfiaco", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Leonildo R Sousa", 0, [[0,2,244],[1,1,88],[2,2,153],[3,1,473]], [["Dez/25",160]]],
+      ["Lucas Cusinato Santos", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Luis Carlos Colicchio Raymundo", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Luiz Clovis de Carvalho", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Setembro (ant.)",203],["Outubro (ant.)",44],["Abril/25",75],["Set/25",906],["Dez/25",160]]],
+      ["Manoel Souza Lisboa", 1, [], [["Setembro (ant.)",203],["Outubro (ant.)",44]]],
+      ["Marcel Henrique Trabuco", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Marcelo Bispo da Silva", 0, [[0,2,244],[1,1,88],[2,1,76],[3,1,473]], []],
+      ["Marcio Manoel Oliveira Santos", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Marcus Vinicius Ribeiro Jacobina", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Maria Alves de Lima Torres", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Mario Alburqueq ue Junior", 1, [], [["Abril/25",75]]],
+      ["Michel Anderson Friedrich Passos", 2, [], [["Setembro (ant.)",203]]],
+      ["Natassja Voronkoff", 0, [[0,2,244],[1,1,88],[2,2,153],[3,2,946]], [["Setembro (ant.)",203],["Abril/25",75],["Dez/25",160]]],
+      ["Nilson Aparecido Borges", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Agosto (ant.)",239],["Setembro (ant.)",203],["Outubro (ant.)",44],["Abril/25",75],["Set/25",906],["Dez/25",160]]],
+      ["Nilton da Silva Mesquita", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Pablo Cruz da Silva", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Pedro Araujo Chaves Junior", 2, [], [["Setembro (ant.)",203],["Outubro (ant.)",44]]],
+      ["Pedro Augusto da Camara de Oliveira", 2, [], [["Outubro (ant.)",44]]],
+      ["Priscila Castro de Oliveira Gomes", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Rafael Andrade Belloti", 0, [[0,1,122]], [["Dez/25",160]]],
+      ["Rafael Campos Carneiro Ururahy", 0, [[0,1,122],[3,1,473]], [["Dez/25",160]]],
+      ["Raphel Embelicieri Junior", 0, [[0,2,244],[1,2,175],[2,2,153],[3,2,946]], [["Dez/25",160]]],
+      ["Reginaldo do Santos Borges", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Reinaldo Narumi Shinmachi", 0, [[0,2,244],[1,2,175],[2,2,153],[3,2,946]], [["Set/25",906],["Dez/25",160]]],
+      ["Ricardo Macedo Vargas Goncalves", 0, [[0,1,122],[2,1,76],[3,1,473]], [["Setembro (ant.)",203],["Dez/25",160]]],
+      ["Riuji M Auzani Queiroz", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Rodrigo Bernadino de Almeida", 0, [[0,1,122],[2,1,76],[3,1,473]], [["Abril/25",75]]],
+      ["Rosemery Apolinario de Alencar", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Rosimeire Hirako", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Sergio Borges Marques", 1, [], [["Set/25",906]]],
+      ["Sormane Silva", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Tania Almeida da Costa", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Tassio Carvalho Soares de Souza", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Thiago Mendes", 2, [], [["Agosto (ant.)",239],["Setembro (ant.)",203]]],
+      ["Tiago Augusto da Silva", 1, [], []],
+      ["Tiago Silveira D Orta", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Valter Ferreira Fantoni", 1, [], [["Abril/25",75]]],
+      ["Victor Aguiar B. Santos", 0, [[0,1,122],[1,1,88],[2,1,76],[3,1,473]], [["Dez/25",160]]],
+      ["Vilmar Guimaraes", 0, [[0,2,244],[1,1,88],[2,2,153],[3,1,473]], [["Dez/25",160]]]
     ];
+    
+    const MS = ["Maio", "Junho", "Agosto", "Setembro"];
+    const ST = ["Ativo em 2026", "No grupo · sem bolão em 2026", "Fora do grupo"];
+    const SC = ["ok", "wn", "of"];
 
-    /* ==========================================================================
-       INICIALIZAÇÃO: Popula a tabela completa com nomes clicáveis (links)
-       ========================================================================== */
-    window.onload = function() {
-        const tbody = document.getElementById('fullTableBody');
-        baseCreditos.forEach(item => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td class="ps-3">
-                    <span class="participant-link" onclick="selecionarParticipante('${item.nome.replace(/'/g, "\\'")}')">
-                        <i class="bi bi-person-fill me-1"></i> ${item.nome}
-                    </span>
-                </td>
-                <td class="text-end pe-3 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</td>
-            `;
-            tbody.appendChild(tr);
-        });
+    /* ====== FUNÇÕES AUXILIARES ======
+       $   = atalho para getElementById
+       nm  = normaliza texto (sem acento, minúsculo): "João" e "joao" são tratados como iguais
+       esc = ESCAPA texto antes de usar em innerHTML. Obrigatório para qualquer texto vindo de
+             digitação ou de nomes, para evitar injeção de código. Não remover.
+       brl = formata centavos como moeda brasileira (ex.: 919 vira R$ 9,19)
+       sum = soma o último item de cada linha (os centavos) */
+    const $ = id => document.getElementById(id);
+    const nm = s => s.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+    const esc = s => s.replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;" }[c]));
+    const brl = c => (c / 100).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+    const sum = a => a.reduce((t, x) => t + x[x.length - 1], 0);
+
+    /* Pré-processa cada pessoa: cria campos de apoio. t26 = total 2026, t25 = total anteriores,
+       t = total disponível (calculado aqui, nunca digitado), k = nome normalizado para a busca. */
+    D.forEach((p, i) => {
+      p.i = i;
+      p.n = p[0];
+      p.s = p[1];
+      p.a = p[2];
+      p.b = p[3];
+      p.t26 = sum(p.a);
+      p.t25 = sum(p.b);
+      p.t = p.t26 + p.t25;
+      p.k = nm(p.n);
+    });
+
+    /* BUSCA: separa o que foi digitado em palavras; a pessoa aparece se TODAS as palavras
+       estiverem no nome (ex.: "vilmar guim" acha "Vilmar Guimaraes"). */
+    const toks = q => nm(q).split(/\s+/).filter(Boolean);
+    const find = q => {
+      const t = toks(q);
+      return t.length ? D.filter(p => t.every(x => p.k.includes(x))) : [];
     };
 
-    /* ==========================================================================
-       SELECIONAR PARTICIPANTE CLICANDO NA TABELA
-       ========================================================================== */
-    function selecionarParticipante(nomeParticipante) {
-        const item = baseCreditos.find(p => p.nome === nomeParticipante);
-        if (item) {
-            document.getElementById('searchInput').value = item.nome;
-            document.getElementById('suggestionsContainer').style.display = 'none';
-            exibirResultado(item);
-            window.scrollTo({ top: 100, behavior: 'smooth' });
+    /* Distância de edição (Levenshtein): conta quantas letras diferem entre duas palavras. */
+    function lev(a, b) {
+      const d = [...Array(b.length + 1).keys()];
+      for (let i = 1; i <= a.length; i++) {
+        let p = d[0];
+        d[0] = i;
+        for (let j = 1; j <= b.length; j++) {
+          const t = d[j];
+          d[j] = Math.min(d[j] + 1, d[j - 1] + 1, p + (a[i - 1] === b[j - 1] ? 0 : 1));
+          p = t;
         }
+      }
+      return d[b.length];
     }
 
-    /* ==========================================================================
-       AUTOCOMPLETE E PESQUISA EM TEMPO REAL
-       ========================================================================== */
-    function onSearchInput() {
-        const termo = document.getElementById('searchInput').value.toLowerCase().trim();
-        const suggestionsBox = document.getElementById('suggestionsContainer');
-        
-        suggestionsBox.innerHTML = '';
-
-        if (termo === '') {
-            suggestionsBox.style.display = 'none';
-            document.getElementById('resultContainer').innerHTML = `
-                <div class="text-center py-5 text-muted">
-                    <i class="bi bi-search fs-1 opacity-25 d-block mb-2"></i>
-                    <p class="fst-italic">Comece a digitar o seu nome acima ou clique em "Ver Todos".</p>
-                </div>`;
-            return;
+    /* SUGESTÃO "Você quis dizer": quando não há resultado exato, procura nomes parecidos
+       (tolera 1 erro em palavras curtas e 2 nas longas) e devolve até 3. */
+    function near(q) {
+      const t = toks(q);
+      return D.map(p => {
+        const w = p.k.split(" ");
+        let s = 0;
+        for (const x of t) {
+          const m = Math.min(...w.map(y => lev(x, y.slice(0, x.length))));
+          if (m > (x.length > 5 ? 2 : 1)) return null;
+          s += m;
         }
-
-        const matches = baseCreditos.filter(item => item.nome.toLowerCase().includes(termo));
-
-        if (matches.length > 0) {
-            suggestionsBox.style.display = 'block';
-            matches.slice(0, 5).forEach(item => {
-                const div = document.createElement('div');
-                div.className = 'suggestion-item';
-                div.innerHTML = `<i class="bi bi-person text-primary me-2"></i> ${item.nome}`;
-                div.onclick = () => {
-                    document.getElementById('searchInput').value = item.nome;
-                    suggestionsBox.style.display = 'none';
-                    exibirResultado(item);
-                };
-                suggestionsBox.appendChild(div);
-            });
-        } else {
-            suggestionsBox.style.display = 'none';
-        }
-
-        if (matches.length === 1) {
-            exibirResultado(matches[0]);
-        } else if (matches.length > 1) {
-            let htmlCards = '<div class="d-flex flex-column gap-3">';
-            matches.forEach((item, idx) => {
-                htmlCards += criarCardParticipante(item, idx);
-            });
-            htmlCards += '</div>';
-            document.getElementById('resultContainer').innerHTML = htmlCards;
-        } else {
-            document.getElementById('resultContainer').innerHTML = `
-                <div class="alert alert-warning text-center rounded-4 p-4 shadow-sm" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill fs-3 d-block mb-2"></i>
-                    Nenhum participante encontrado com o nome <strong>"${termo}"</strong>. Verifique a digitação.
-                </div>`;
-        }
+        return [s, p];
+      }).filter(Boolean).sort((a, b) => a[0] - b[0]).slice(0, 3).map(x => x[1]);
     }
 
-    /* ==========================================================================
-       EXIBIÇÃO DO CARTÃO DO PARTICIPANTE
-       ========================================================================== */
-    function exibirResultado(item) {
-        document.getElementById('suggestionsContainer').style.display = 'none';
-        document.getElementById('resultContainer').innerHTML = criarCardParticipante(item, 0);
+    /* Animação do total (número subindo). Sem animação se o aparelho pedir menos movimento. */
+    function count(el, to) {
+      if (!to || matchMedia("(prefers-reduced-motion:reduce)").matches) {
+        el.textContent = brl(to);
+        return;
+      }
+      let t0;
+      const f = t => {
+        t0 ??= t;
+        const k = Math.min((t - t0) / 600, 1);
+        el.textContent = brl(Math.round(to * (1 - Math.pow(1 - k, 3))));
+        k < 1 && requestAnimationFrame(f);
+      };
+      requestAnimationFrame(f);
     }
 
-    function criarCardParticipante(item, index) {
-        // Monta badges de créditos novos APENAS se o valor for maior que 0 (auditado rigorosamente)
-        let newMonthsHtml = '';
-        let hasNewCredits = false;
-
-        const meses = [
-            { nome: 'Maio', val: item.maio },
-            { nome: 'Junho', val: item.junho },
-            { nome: 'Agosto', val: item.agosto },
-            { nome: 'Setembro', val: item.setembro }
-        ];
-
-        meses.forEach(m => {
-            if (m.val > 0) {
-                hasNewCredits = true;
-                newMonthsHtml += `<span class="badge badge-new-valid"><i class="bi bi-check-circle-fill me-1"></i> ${m.nome}: R$ ${m.val.toFixed(2).replace('.', ',')}</span>`;
-            }
-        });
-
-        if (!hasNewCredits) {
-            newMonthsHtml = `<span class="text-muted small fst-italic">Nenhum crédito novo em 2026 (participante ausente nas listas mensais ou ausente do grupo).</span>`;
-        }
-
-        // Monta créditos antigos
-        let oldHtml = '';
-        const oldKeys = Object.keys(item.old);
-        if (oldKeys.length > 0) {
-            oldHtml = `<p class="fw-semibold text-secondary small mb-2 mt-3"><i class="bi bi-clock-history"></i> Créditos Anteriores (2025):</p>
-                       <div class="d-flex flex-wrap gap-2">`;
-            oldKeys.forEach(k => {
-                oldHtml += `<span class="badge badge-old">${k}: R$ ${item.old[k].toFixed(2).replace('.', ',')}</span>`;
-            });
-            oldHtml += `</div>`;
-        }
-
-        return `
-            <div class="card p-4 border-0 shadow-sm rounded-4 bg-light result-box">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <div>
-                        <span class="badge bg-primary bg-opacity-10 text-primary mb-1 fw-semibold">Participante</span>
-                        <h4 class="fw-bold text-dark mb-0">${item.nome}</h4>
-                    </div>
-                    <div class="text-end">
-                        <span class="text-muted small d-block">Total Disponível</span>
-                        <span class="fs-3 fw-bold text-success">R$ ${item.total.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                </div>
-
-                <hr class="text-muted opacity-25 my-3">
-
-                <!-- Créditos Novos (Validados rigorosamente) -->
-                <p class="fw-semibold text-secondary small mb-2"><i class="bi bi-calendar-check text-primary"></i> Créditos Novos (2026):</p>
-                <div class="d-flex flex-wrap gap-2">
-                    ${newMonthsHtml}
-                </div>
-
-                ${oldHtml}
-
-                <!-- Simulador de Abatimento -->
-                <div class="bg-white border rounded-4 p-3 mt-4">
-                    <label class="form-label fw-bold small text-dark mb-2">
-                        <i class="bi bi-calculator text-primary"></i> Simulador de Aposta / Abatimento:
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0">R$</span>
-                        <input type="number" step="0.01" class="form-control border-start-0 ps-0" id="inputAposta_${index}" placeholder="Digite o valor da aposta (Ex: 50.00)" oninput="calcularAbatimento(${item.total}, ${index})">
-                    </div>
-                    <div id="resultadoAbatimento_${index}" class="mt-3 text-muted small fst-italic">
-                        Digite um valor acima para calcular o valor a pagar com o abatimento dos créditos.
-                    </div>
-                </div>
-            </div>
-        `;
+    /* MOSTRA O PARTICIPANTE: monta o cartão (status, total, barra, créditos 2026 e anteriores)
+       e o cartão do simulador. Os textos do resultado são montados aqui; os nomes passam por esc(). */
+    function show(p) {
+      $("q").value = p.n;
+      $("sg").hidden = true;
+      $("cl").hidden = false;
+      const n26 = p.a.map(([m, c, v]) => `<div class="chip"><b>${brl(v)}</b><small>${MS[m]} · ${c} cota${c > 1 ? "s" : ""}</small></div>`).join("");
+      const n25 = p.b.map(([l, v]) => `<div class="chip"><b>${brl(v)}</b><small>${l}</small></div>`).join("");
+      const nt = ["", "<p class=\"note\">Está no grupo, mas não participou dos bolões de 2026 listados.</p>", "<p class=\"note\">Consta como fora do grupo. Os créditos seguem registrados para conferência.</p>"][p.s];
+      
+      $("res").innerHTML = `
+        <section class="card">
+          <span class="badge ${SC[p.s]}">${ST[p.s]}</span>
+          <h2>${esc(p.n)}</h2>
+          ${nt}
+          <div class="lbl" style="margin-top:14px">Total disponível</div>
+          <div class="total" id="tt"></div>
+          ${p.t ? `<div class="bar"><i style="width:${p.t26 / p.t * 100}%;background:var(--pri)"></i><i style="width:${p.t25 / p.t * 100}%;background:var(--pri2)"></i></div><div class="note" style="margin-top:6px"><span style="color:var(--pri)">●</span> 2026: ${brl(p.t26)} &nbsp; <span style="color:var(--pri2)">●</span> Anteriores: ${brl(p.t25)}</div>` : `<p class="note">Sem créditos disponíveis no momento.</p>`}
+          <div class="lbl">Créditos novos (2026)</div>
+          ${n26 ? `<div class="chips">${n26}</div>` : `<p class="note">Nenhum crédito em 2026 nos bolões listados.</p>`}
+          <div class="lbl">Créditos anteriores</div>
+          ${n25 ? `<div class="chips">${n25}</div>` : `<p class="note">Nenhum crédito anterior.</p>`}
+        </section>
+        <section class="card">
+          <h3>Simulador de abatimento</h3>
+          <p class="note" style="margin:4px 0 12px">Informe um valor e veja quanto do seu crédito seria usado.</p>
+          <input id="v" inputmode="decimal" autocomplete="off" placeholder="Ex.: 50,00" aria-label="Valor em reais">
+          <div class="q">${[10, 20, 50, 100].map(x => `<button data-v="${x}">R$ ${x}</button>`).join("")}</div>
+          <div id="sim" style="margin-top:14px"></div>
+        </section>`;
+      
+      count($("tt"), p.t);
+      $("v").oninput = () => sim(p);
+      sim(p);
     }
 
-    /* ==========================================================================
-       CÁLCULO DE ABATIMENTO (Valor Informado - Total de Créditos)
-       ========================================================================== */
-    function calcularAbatimento(totalDisponivel, index) {
-        const inputVal = document.getElementById(`inputAposta_${index}`).value;
-        const divResultado = document.getElementById(`resultadoAbatimento_${index}`);
-
-        if (inputVal === '' || isNaN(inputVal)) {
-            divResultado.innerHTML = 'Digite um valor acima para calcular o valor a pagar subtraindo os créditos.';
-            return;
-        }
-
-        const valorAposta = parseFloat(inputVal);
-        const valorAbatido = Math.min(valorAposta, totalDisponivel);
-        const aPagar = valorAposta - totalDisponivel; // Valor informado - Total de créditos disponíveis
-
-        if (aPagar <= 0) {
-            divResultado.innerHTML = `
-                <div class="p-3 bg-success bg-opacity-10 rounded-3 text-success">
-                    <div class="fw-bold mb-1"><i class="bi bi-check-circle-fill"></i> O seu crédito cobre 100% da aposta!</div>
-                    <div>Valor abatido: R$ ${valorAbatido.toFixed(2).replace('.', ',')} | <strong>Valor a pagar: R$ 0,00</strong></div>
-                    <div class="small mt-1 opacity-75">Sobra um saldo de R$ ${Math.abs(aPagar).toFixed(2).replace('.', ',')} para os próximos jogos.</div>
-                </div>
-            `;
-        } else {
-            divResultado.innerHTML = `
-                <div class="p-3 bg-white rounded-3 border">
-                    <div class="text-secondary small">Valor abatido pelos créditos: <strong class="text-dark">R$ ${totalDisponivel.toFixed(2).replace('.', ',')}</strong></div>
-                    <div class="text-dark fw-bold mt-1 pt-1 border-top">
-                        Valor a pagar (R$ ${valorAposta.toFixed(2).replace('.', ',')} - R$ ${totalDisponivel.toFixed(2).replace('.', ',')}): 
-                        <span class="text-danger fs-5 ms-1">R$ ${aPagar.toFixed(2).replace('.', ',')}</span>
-                    </div>
-                </div>
-            `;
-        }
+    /* SIMULADOR DE ABATIMENTO: lê o valor digitado (aceita vírgula e "R$"), converte para centavos e calcula:
+       usado = menor entre valor e crédito | restante = crédito - usado | a pagar = quanto passar do crédito. */
+    function sim(p) {
+      const el = $("sim"),
+            s = $("v").value.trim().replace(/\s/g, "").replace(/^R\$/i, "").replace(",", "."),
+            v = Number(s);
+      
+      if (!s) { el.innerHTML = ""; return; }
+      if (!isFinite(v) || v < 0) { el.innerHTML = "<p class=\"note\">Informe um valor positivo, por exemplo 50,00.</p>"; return; }
+      
+      const c = Math.round(v * 100),
+            u = Math.min(c, p.t),
+            r = p.t - u,
+            pg = Math.max(c - p.t, 0),
+            pc = c ? Math.round(u / c * 100) : 0;
+            
+      el.innerHTML = `
+        <div class="bar"><i style="width:${pc}%;background:var(--ok)"></i></div>
+        <p class="note" style="margin:6px 0 0">${!c ? "" : pg ? `O crédito cobre ${pc}% do valor. Você paga a diferença.` : "✅ Seu crédito cobre 100% do valor."}</p>
+        <div class="tiles">
+          <div class="tile"><b>${brl(u)}</b><small>Crédito usado</small></div>
+          <div class="tile"><b>${brl(r)}</b><small>Crédito restante</small></div>
+          <div class="tile"><b style="color:${pg ? "var(--bad)" : "var(--ok)"}">${brl(pg)}</b><small>A pagar</small></div>
+        </div>`;
     }
 
-    /* ==========================================================================
-       EXIBIÇÃO DA TABELA COMPLETA
-       ========================================================================== */
-    function toggleTabelaCompleta() {
-        const tabelaDiv = document.getElementById('fullTableContainer');
-        const btnText = document.getElementById('btnText');
-        
-        if (tabelaDiv.classList.contains('d-none')) {
-            tabelaDiv.classList.remove('d-none');
-            btnText.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar Todos';
-        } else {
-            tabelaDiv.classList.add('d-none');
-            btnText.innerHTML = '<i class="bi bi-list-ul"></i> Ver Todos os Participantes';
-        }
+    /* A CADA LETRA DIGITADA: 1 resultado = abre direto; vários = lista para escolher;
+       nenhum = tenta sugerir nomes parecidos; campo vazio = volta à mensagem inicial. */
+    function onq() {
+      const q = $("q").value,
+            m = find(q),
+            sg = $("sg"),
+            res = $("res");
+      
+      $("cl").hidden = !q;
+      
+      if (!q.trim()) {
+        sg.hidden = true;
+        res.innerHTML = `<div class="card msg">Comece digitando seu nome acima.<br><small>Não precisa de acento nem do nome completo.</small></div>`;
+        return;
+      }
+      if (m.length === 1) { show(m[0]); return; }
+      if (m.length) {
+        sg.innerHTML = m.slice(0, 6).map(p => `<li data-i="${p.i}"><span>${esc(p.n)}</span><span class="badge ${SC[p.s]}">${ST[p.s]}</span></li>`).join("");
+        sg.hidden = false;
+        res.innerHTML = `<div class="card msg">${m.length} pessoas encontradas. Escolha seu nome na lista${m.length > 6 ? " ou digite mais letras" : ""}.</div>`;
+        return;
+      }
+      
+      sg.hidden = true;
+      const n = near(q);
+      res.innerHTML = `<div class="card msg">Nenhum nome encontrado para “${esc(q.trim())}”.${n.length ? `<div class="q" style="justify-content:center"><span class="note" style="width:100%">Você quis dizer:</span>${n.map(p => `<button class="lk" data-i="${p.i}">${esc(p.n)}</button>`).join("")}</div>` : "<br><small>Confira a digitação.</small>"}</div>`;
     }
 
-    // Fecha sugestões ao clicar fora
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.search-container')) {
-            document.getElementById('suggestionsContainer').style.display = 'none';
-        }
+    /* EVENTOS: digitar atualiza a busca; Enter abre o primeiro resultado. */
+    $("q").addEventListener("input", onq);
+    $("q").addEventListener("keydown", e => {
+      if (e.key === "Enter") {
+        const m = find($("q").value);
+        if (m.length) show(m[0]);
+      }
     });
-</script>
 
+    /* CLIQUES (um só ouvinte para a página toda): item da lista ou sugestão (data-i),
+       atalho de valor do simulador (data-v) e clique fora da lista para fechá-la. */
+    document.addEventListener("click", e => {
+      const t = e.target.closest("[data-i],[data-v]");
+      if (t && t.dataset.i !== undefined) {
+        show(D[+t.dataset.i]);
+        if (t.closest("#all")) {
+          setAll(false);
+          $("res").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion:reduce)").matches ? "auto" : "smooth", block: "start" });
+        }
+        return;
+      }
+      if (t && t.dataset.v) {
+        $("v").value = t.dataset.v.replace(".", ",");
+        $("v").dispatchEvent(new Event("input"));
+        return;
+      }
+      if (!e.target.closest(".sb")) $("sg").hidden = true;
+    });
+
+    /* LISTA COMPLETA: setAll(true) monta e abre a lista com todos os nomes (apenas nome e status, sem saldos);
+       setAll(false) fecha. Clicar num nome é tratado no ouvinte de cliques acima: preenche a busca e mostra o cartão. */
+    function setAll(o) {
+      const l = $("all");
+      if (o) l.innerHTML = D.map(p => `<li data-i="${p.i}"><span>${esc(p.n)}</span><span class="badge ${SC[p.s]}">${ST[p.s]}</span></li>`).join("");
+      l.hidden = !o;
+      $("sa").textContent = o ? "🔼 Ocultar lista de nomes" : "📋 Mostrar todos os nomes";
+      $("sa").setAttribute("aria-expanded", o);
+    }
+    $("sa").onclick = () => setAll($("all").hidden);
+
+    /* BOTÃO ✕ LIMPAR: apaga o campo, volta à mensagem inicial e devolve o foco ao campo de busca. */
+    $("cl").onclick = () => {
+      $("q").value = "";
+      onq();
+      $("q").focus();
+    };
+
+    /* BOTÃO DE TEMA: alterna entre claro e escuro (a escolha vale só enquanto a página está aberta). */
+    $("th").onclick = () => {
+      const r = document.documentElement,
+            d = r.dataset.theme ? r.dataset.theme === "dark" : matchMedia("(prefers-color-scheme:dark)").matches;
+      r.dataset.theme = d ? "light" : "dark";
+    };
+  </script>
 </body>
 </html>
